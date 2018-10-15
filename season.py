@@ -54,11 +54,16 @@ class Season:
         if round == 0 or round > self.number_of_rounds():
             raise ValueError(f'"round" must be 1 to {self.number_of_rounds()} inclusive')
 
-        return [{'homeTeam': game['homeTeam'], 
-                 'awayTeam': game['awayTeam'],
-                 'goalsHomeTeam': game['goalsHomeTeam'],
-                 'goalsAwayTeam': game['goalsAwayTeam'],
-                 'status': game['status']} for game in self._all_games if game['round'] == f"Premier League - {round}"]
+        return [
+                    {
+                        'homeTeam': game['homeTeam'], 
+                        'awayTeam': game['awayTeam'],
+                        'goalsHomeTeam': game['goalsHomeTeam'],
+                        'goalsAwayTeam': game['goalsAwayTeam'],
+                        'status': game['status']
+                    } 
+                    for game in self._all_games if game['round'] == f"Premier League - {round}"
+                ]
 
     def all_games_unstarted(self, round):
         """
@@ -92,28 +97,48 @@ class Season:
         if game['goalsAwayTeam']:
             raise ValueError(f"Away teams goals is invalid for unstarted match")
 
+        hgf = self.stats(game['homeTeam'])['homeTeamGoalsFor']
+        hga = self.stats(game['homeTeam'])['homeTeamGoalsAgainst']
+        agf = self.stats(game['awayTeam'])['awayTeamGoalsFor']
+        aga = self.stats(game['awayTeam'])['awayTeamGoalsAgainst']
 
-        homeTeamGoalsFor = list()
-        homeTeamGoalsAgainst = list()
-        awayTeamGoalsFor = list()
-        awayTeamGoalsAgainst = list()
-
-        for round in range(1, self.first_unstarted_round()):
-            for games in self.games_for_round(round):
-                if games['homeTeam'] == game['homeTeam']:
-                    homeTeamGoalsFor.append(int(games['goalsHomeTeam']))
-                    homeTeamGoalsAgainst.append(int(games['goalsAwayTeam']))
-                    
-                if games['awayTeam'] == game['awayTeam']:
-                    awayTeamGoalsFor.append(int(games['goalsAwayTeam']))
-                    awayTeamGoalsAgainst.append(int(games['goalsHomeTeam']))
-
-        homeTeamGoals = goals_average(homeTeamGoalsFor, awayTeamGoalsAgainst)
-        awayTeamGoals = goals_average(homeTeamGoalsAgainst, awayTeamGoalsFor)
+        homeTeamGoals = goals_average(hgf, aga)
+        awayTeamGoals = goals_average(hga, agf)
         
-        return f"{game['homeTeam']} {homeTeamGoals} -  {awayTeamGoals} {game['awayTeam']}"
+        return f"{game['homeTeam']} {homeTeamGoals} - {awayTeamGoals} {game['awayTeam']}"
         
+    def results(self, team):
+        """
+        Returns all results for team.
+        """
 
+        return [
+                    {
+                        'round': game['round'],
+                        'homeTeam': game['homeTeam'], 
+                        'awayTeam': game['awayTeam'],
+                        'goalsHomeTeam': game['goalsHomeTeam'],
+                        'goalsAwayTeam': game['goalsAwayTeam']
+                    } 
+                    for game in self._all_games if game['status'] == 'Match Finished' and (game['homeTeam'] == team or game['awayTeam'] == team)
+                ]
+
+    def stats(self, team):
+        """
+        Returns all stats for team.
+        """
+
+        homeTeamGoalsFor = [int(game['goalsHomeTeam']) for game in self._all_games if game['status'] == 'Match Finished' and game['homeTeam'] == team]
+        homeTeamGoalsAgainst = [int(game['goalsAwayTeam']) for game in self._all_games if game['status'] == 'Match Finished' and game['homeTeam'] == team]
+        awayTeamGoalsFor = [int(game['goalsAwayTeam']) for game in self._all_games if game['status'] == 'Match Finished' and game['awayTeam'] == team]
+        awayTeamGoalsAgainst = [int(game['goalsHomeTeam']) for game in self._all_games if game['status'] == 'Match Finished' and game['awayTeam'] == team]
+
+        return {
+                    'homeTeamGoalsFor': homeTeamGoalsFor,
+                    'homeTeamGoalsAgainst': homeTeamGoalsAgainst,
+                    'awayTeamGoalsFor': awayTeamGoalsFor,
+                    'awayTeamGoalsAgainst': awayTeamGoalsAgainst
+                }
 
 
 
