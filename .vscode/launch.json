@@ -8,9 +8,9 @@
             "name": "Python: Current File (Integrated Terminal)",
             "type": "python",
             "request": "launch",
-            "program": "${file}",
+            "program": "${workspaceFolder}/predictor.py",
             "console": "integratedTerminal",
-            "stopOnEntry": true
+            "stopOnEntry": false
         },
         {
             "name": "Python: Attach",
