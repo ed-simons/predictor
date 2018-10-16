@@ -1,7 +1,5 @@
 import season
 
-def result_string(result):
-        return f"{result['homeTeam']} {result['goalsHomeTeam']} - {result['goalsAwayTeam']} {result['awayTeam']}"
 
 def calculate_wadzy_score(predicted, actual, joker):
 
@@ -32,8 +30,10 @@ def calculate_wadzy_score(predicted, actual, joker):
 
 season = season.Season()
 
+wadzy_season_total = 0
 for r in range(1, season.first_unstarted_round()):
     print(f'Round {r}')
+    wadzy_round_total = 0
     try:
         games = season.games_for_round(r)
     except ValueError as err:
@@ -42,10 +42,11 @@ for r in range(1, season.first_unstarted_round()):
         for game in games:
             prediction = season.predict_result(game, r)
             actual = season.actual_result(game)
-
-            print(f"Prediction: {result_string(prediction)}")
-            print(f"Actual:     {result_string(actual)}")
-
-            print(f"wadzy_score = {calculate_wadzy_score(prediction, actual, 'Arsenal')}")
+            wadzy_score = calculate_wadzy_score(prediction, actual, 'Arsenal')
+            wadzy_round_total += wadzy_score
+            print(f"{actual['homeTeam']} v {actual['awayTeam']} Prediction: {prediction['goalsAwayTeam']} - {prediction['goalsHomeTeam']} Actual: {actual['goalsAwayTeam']} - {actual['goalsHomeTeam']} : wadzy_score = {wadzy_score}")
+    wadzy_season_total += wadzy_round_total
+    print(f"Wadzy Round Total: {wadzy_round_total}, Wadzy Season Total: {wadzy_season_total}")
+        
 
         
