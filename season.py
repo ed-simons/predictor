@@ -35,7 +35,7 @@ class Season:
         if not goals:
             return 1
 
-        return round((sum(goals)/len(goals))/2)
+        return round(sum(goals)/len(goals))
 
     def all_games(self):
         """
@@ -49,12 +49,12 @@ class Season:
         """
         return len({game['round'] for game in self._all_games})
 
-    def games_for_round(self, round):
+    def games_for_round(self, season_round):
         """
         Returns information for all games in the round.
         """
-        if round == 0 or round > self.number_of_rounds():
-            raise ValueError(f'"round" must be 1 to {self.number_of_rounds()} inclusive')
+        if season_round == 0 or season_round > self.number_of_rounds():
+            raise ValueError(f'"season_round" must be 1 to {self.number_of_rounds()} inclusive')
 
         return [
                     {
@@ -64,17 +64,17 @@ class Season:
                         'goalsAwayTeam': game['goalsAwayTeam'],
                         'status': game['status']
                     } 
-                    for game in self._all_games if game['round'] == round
+                    for game in self._all_games if game['round'] == season_round
                 ]
 
-    def all_games_unstarted(self, round):
+    def all_games_unstarted(self, season_round):
         """
         Returns True if no games have been started for the round.
         """
-        if round == 0 or round > self.number_of_rounds():
-            raise ValueError(f'"round" must be 1 to {self.number_of_rounds()} inclusive')
+        if season_round == 0 or season_round > self.number_of_rounds():
+            raise ValueError(f'"season_round" must be 1 to {self.number_of_rounds()} inclusive')
 
-        return all([game['status']=='Not Started' for game in self.games_for_round(round)])
+        return all([game['status']=='Not Started' for game in self.games_for_round(season_round)])
 
     def first_unstarted_round(self):
         """
@@ -82,25 +82,39 @@ class Season:
 
         Note that during a typical round some games may have finished, some will be in progress and others not started.
         """
-        for round in range(1, self.number_of_rounds()+1):
-            if self.all_games_unstarted(round):
-                return round 
-            
-    def predict_result(self, game, round):
+        for season_round in range(1, self.number_of_rounds()+1):
+            if self.all_games_unstarted(season_round):
+                return season_round 
+
+    def predict_result(self, game, season_round):
         """
-        Predicts the result of the game.
+        Predicts the result of the game based on all games up to the given round.
         """
 
-        hgf = self.stats(game['homeTeam'], round)['homeTeamGoalsFor']
-        hga = self.stats(game['homeTeam'], round)['homeTeamGoalsAgainst']
-        agf = self.stats(game['awayTeam'], round)['awayTeamGoalsFor']
-        aga = self.stats(game['awayTeam'], round)['awayTeamGoalsAgainst']
+        hgf = self.stats(game['homeTeam'], season_round)['homeTeamGoalsFor']
+        hga = self.stats(game['homeTeam'], season_round)['homeTeamGoalsAgainst']
+        agf = self.stats(game['awayTeam'], season_round)['awayTeamGoalsFor']
+        aga = self.stats(game['awayTeam'], season_round)['awayTeamGoalsAgainst']
 
-        homeTeamGoals = self.goals_average(hgf, aga)
-        awayTeamGoals = self.goals_average(agf, hga)
-        
-        return f"{game['homeTeam']} {homeTeamGoals} - {awayTeamGoals} {game['awayTeam']}"
-        
+        return {
+                    'homeTeam': game['homeTeam'], 
+                    'awayTeam': game['awayTeam'],
+                    'goalsHomeTeam': self.goals_average(hgf, aga),
+                    'goalsAwayTeam': self.goals_average(agf, hga)
+                } 
+
+    def actual_result(self, game):
+        """
+        Actual result of the game.
+        """
+
+        return {
+                    'homeTeam': game['homeTeam'], 
+                    'awayTeam': game['awayTeam'],
+                    'goalsHomeTeam': int(game['goalsHomeTeam']),
+                    'goalsAwayTeam': int(game['goalsAwayTeam'])
+                } 
+
     def results(self, team):
         """
         Returns all results for team.
@@ -117,21 +131,15 @@ class Season:
                     for game in self._all_games if game['status'] == 'Match Finished' and (game['homeTeam'] == team or game['awayTeam'] == team)
                 ]
 
-    def stats(self, team, round):
+    def stats(self, team, season_round):
         """
         Returns all stats for team.
         """
-
-        homeTeamGoalsFor = [int(game['goalsHomeTeam']) for game in self._all_games if game['round'] < round and game['homeTeam'] == team]
-        homeTeamGoalsAgainst = [int(game['goalsAwayTeam']) for game in self._all_games if game['round'] < round and game['homeTeam'] == team]
-        awayTeamGoalsFor = [int(game['goalsAwayTeam']) for game in self._all_games if game['round'] < round and game['awayTeam'] == team]
-        awayTeamGoalsAgainst = [int(game['goalsHomeTeam']) for game in self._all_games if game['round'] < round  and game['awayTeam'] == team]
-
         return {
-                    'homeTeamGoalsFor': homeTeamGoalsFor,
-                    'homeTeamGoalsAgainst': homeTeamGoalsAgainst,
-                    'awayTeamGoalsFor': awayTeamGoalsFor,
-                    'awayTeamGoalsAgainst': awayTeamGoalsAgainst
+                    'homeTeamGoalsFor': [int(game['goalsHomeTeam']) for game in self._all_games if game['round'] < season_round and game['homeTeam'] == team],
+                    'homeTeamGoalsAgainst': [int(game['goalsAwayTeam']) for game in self._all_games if game['round'] < season_round and game['homeTeam'] == team],
+                    'awayTeamGoalsFor': [int(game['goalsAwayTeam']) for game in self._all_games if game['round'] < season_round and game['awayTeam'] == team],
+                    'awayTeamGoalsAgainst': [int(game['goalsHomeTeam']) for game in self._all_games if game['round'] < season_round  and game['awayTeam'] == team]
                 }
 
 
