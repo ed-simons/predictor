@@ -47,7 +47,7 @@ class Season:
         """
         Gets the number of rounds that make up the season.
         """
-        return len({games['round'] for games in self._all_games})
+        return len({game['round'] for game in self._all_games})
 
     def games_for_round(self, round):
         """
